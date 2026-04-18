@@ -1,86 +1,71 @@
-# Bahamut Notifier Prototype
+# Bahamut Notifier
 
-這是一個 Windows 桌面小工具的第一版骨架，目標是把巴哈姆特的「通知」與「訂閱更新」顯示在桌面右下角。
+一個以 Electron 製作的 Windows 常駐小工具，用來顯示巴哈姆特的通知與訂閱更新。
 
-## 目前完成
+## 已完成功能
 
-- 以 Electron 建立 Windows 桌面應用骨架
-- 視窗固定出現在右下角
-- 視窗採用常駐、無邊框、最上層顯示
-- UI 已拆成通知區、訂閱區、狀態區
-- 資料來源已抽象成 `BahamutProvider`
-- 目前先以 mock 資料展示畫面
+- Windows 桌面常駐小工具介面
+- 固定顯示在右下角
+- 系統匣常駐，關閉主視窗時不會直接結束程式
+- 右上角 `×` 按鈕可手動隱藏 App
+- 內建巴哈姆特登入視窗
+- 啟動後沿用登入 session 抓取通知與訂閱
+- 自動輪詢更新通知與訂閱資料
+- 通知與訂閱切換顯示
+- 預設只顯示前 5 筆，可按「更多」展開
+- 長訊息自動截斷，避免撐破畫面
+- `F12` 可切換開發者訊息面板
+- 本機保存登入 cookie，降低每次重開都要重新登入的情況
 
-## 為什麼先不用 API 直接串
+## 資料來源
 
-目前我沒有查到巴哈姆特提供正式、公開、文件化的通知 API，可以直接安全地取得站內通知與訂閱資訊。
+目前通知與訂閱資料來自巴哈姆特導覽列使用的 API：
 
-因此比較實際的實作順序是：
+- `type=0`：通知
+- `type=1`：訂閱
 
-1. 先完成 Windows 端顯示器骨架
-2. 再確認 Bahamut 登入後的資料來源
-3. 優先嘗試登入 Cookie + 站內請求
-4. 若沒有穩定接口，再改為隱藏瀏覽器頁面解析
+程式不是用主程序硬拼 Cookie header，而是改成在已登入的巴哈頁面上下文中，以 `credentials: "include"` 發送請求，這樣能更接近瀏覽器實際行為。
 
-## 建議的正式實作方案
-
-### 方案 A: 登入 Cookie + 內部請求
-
-優點：
-
-- 效能較好
-- 畫面較穩
-- 可做背景輪詢
-
-缺點：
-
-- 需要先確認站內實際請求接口
-- 站方改版時可能失效
-
-### 方案 B: 內嵌瀏覽器登入後抓畫面資料
-
-優點：
-
-- 比較接近使用者實際看到的內容
-- 如果沒有公開 API，成功率通常較高
-
-缺點：
-
-- 較依賴 DOM 結構
-- 維護成本較高
-
-## 建議你採用的方向
-
-如果你要的是真正能長期運作的 Windows App，我建議：
-
-- 桌面端：Electron
-- 登入方式：內嵌登入頁或匯入 Cookie
-- 資料取得：優先找站內請求，找不到再做 DOM 解析
-- 通知呈現：右下角主視窗 + Windows Toast 通知
-
-## 如何啟動
-
-這個目錄目前只有骨架，尚未安裝 Electron 套件。
-
-安裝後可使用：
+## 執行方式
 
 ```powershell
-npm install
-npm start
-```
-
-如果 PowerShell 對 `npm` 有執行限制，可改用：
-
-```powershell
+cd C:\Users\Salasrew\Desktop\bahamut
 npm.cmd install
 npm.cmd start
 ```
 
-## 下一步
+如果已經安裝過依賴，之後只需要：
 
-下一步需要做的是把 `src/services/bahamut-provider.js` 從 mock 改成真實資料來源。
+```powershell
+npm.cmd start
+```
 
-那一段我建議分兩階段：
+## 使用方式
 
-1. 先做登入狀態管理
-2. 再接通知與訂閱抓取邏輯
+1. 啟動 App。
+2. 第一次使用時，按右上角「登入」登入巴哈姆特。
+3. 登入成功後，程式會自動抓取通知與訂閱。
+4. 點上方的「通知」或「訂閱」卡片可切換列表。
+5. 資料超過 5 筆時，可按「更多」查看全部。
+6. 按右上角 `×` 可隱藏 App；要再次打開可從系統匣操作。
+
+## 開發者模式
+
+- 開發者訊息預設隱藏
+- 在 App 視窗中按 `F12` 可切換顯示
+- 主要用來查看登入狀態、Cookie 名稱、API 回傳摘要與解析結果
+
+## 專案結構
+
+- [main.js](C:\Users\Salasrew\Desktop\bahamut\main.js)：Electron 主程序、系統匣、登入視窗、cookie 保存
+- [preload.js](C:\Users\Salasrew\Desktop\bahamut\preload.js)：Renderer 與主程序橋接
+- [src/services/bahamut-provider.js](C:\Users\Salasrew\Desktop\bahamut\src\services\bahamut-provider.js)：通知與訂閱資料整理
+- [src/renderer/index.html](C:\Users\Salasrew\Desktop\bahamut\src\renderer\index.html)：畫面結構
+- [src/renderer/renderer.js](C:\Users\Salasrew\Desktop\bahamut\src\renderer\renderer.js)：前端互動邏輯
+- [src/renderer/styles.css](C:\Users\Salasrew\Desktop\bahamut\src\renderer\styles.css)：介面樣式
+
+## 注意事項
+
+- 本專案依賴巴哈姆特目前前端使用的通知 API 與登入 session 行為。
+- 若巴哈姆特未來調整 API 或登入機制，可能需要更新程式。
+- 本機會保存登入相關 cookie 以便下次啟動還原登入狀態，請勿將執行時產生的 cookie 檔案上傳到公開 repo。
