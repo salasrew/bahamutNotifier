@@ -1,10 +1,17 @@
+const path = require("path");
+const { pathToFileURL } = require("url");
+
 const SITE_HOME = "https://www.gamer.com.tw/";
+const DEFAULT_AVATAR_URL = pathToFileURL(
+  path.join(__dirname, "..", "images", "none.gif")
+).toString();
 
 class BahamutProvider {
   constructor(options = {}) {
     this.pollIntervalMs = options.pollIntervalMs ?? 60_000;
     this.electronSession = options.electronSession;
     this.browserFetcher = options.browserFetcher;
+    this.profileFetcher = options.profileFetcher;
     this.lastSnapshot = null;
   }
 
@@ -28,9 +35,10 @@ class BahamutProvider {
     }
 
     try {
-      const [notificationResult, subscriptionResult] = await Promise.all([
+      const [notificationResult, subscriptionResult, heroProfile] = await Promise.all([
         this.fetchNavigationNotification(0),
-        this.fetchNavigationNotification(1)
+        this.fetchNavigationNotification(1),
+        this.fetchHeroProfile(cookies)
       ]);
 
       const notifications = this.normalizeItems(notificationResult.payload, "notification");
@@ -40,24 +48,21 @@ class BahamutProvider {
         source: "browser-context",
         fetchedAt: new Date().toISOString(),
         authState,
+        heroProfile,
         summary: {
           notifications: notifications.length,
           subscriptions: subscriptions.length
         },
         notifications,
         subscriptions,
-        note: [
-          "目前改成從已登入的巴哈頁面上下文發送請求。",
-          "通知使用 type=0，訂閱使用 type=1。",
-          "如果數量仍然是 0，請看下方開發者訊息確認回傳內容是否已經正確。"
-        ],
         developerMessages: this.buildDeveloperMessages({
           authState,
           cookies,
           notificationResult,
           subscriptionResult,
           notifications,
-          subscriptions
+          subscriptions,
+          heroProfile
         })
       };
 
@@ -68,17 +73,13 @@ class BahamutProvider {
         source: "browser-context",
         fetchedAt: new Date().toISOString(),
         authState,
+        heroProfile: this.buildFallbackHeroProfile(cookies),
         summary: {
           notifications: 0,
           subscriptions: 0
         },
         notifications: [],
         subscriptions: [],
-        note: [
-          "目前已登入，但抓取通知或訂閱時發生例外。",
-          `錯誤訊息: ${error.message}`,
-          "請把下方開發者訊息貼給我，我再繼續對準。"
-        ],
         developerMessages: [
           `登入結果: ${authState}`,
           `偵測到 gamer.com.tw Cookie 數量: ${cookies.length}`,
@@ -97,17 +98,22 @@ class BahamutProvider {
       source: "session",
       fetchedAt: new Date().toISOString(),
       authState: "needs-login",
+      heroProfile: {
+        name: "尚未登入",
+        account: "請先登入巴哈姆特",
+        level: "",
+        homeUrl: SITE_HOME,
+        avatarUrl: DEFAULT_AVATAR_URL,
+        gp: "-",
+        coin: "-",
+        donate: "-"
+      },
       summary: {
         notifications: 0,
         subscriptions: 0
       },
       notifications: [],
       subscriptions: [],
-      note: [
-        "目前尚未偵測到有效的巴哈姆特登入狀態。",
-        "請按右上角登入，使用內建視窗登入巴哈姆特。",
-        "登入成功後，程式會沿用同一份瀏覽器 session 抓通知與訂閱。"
-      ],
       developerMessages: [
         "登入結果: 尚未登入",
         `偵測到 gamer.com.tw Cookie 數量: ${cookies.length}`,
@@ -123,12 +129,14 @@ class BahamutProvider {
     notificationResult,
     subscriptionResult,
     notifications,
-    subscriptions
+    subscriptions,
+    heroProfile
   }) {
     const messages = [
       `登入結果: ${authState}`,
       `偵測到 gamer.com.tw Cookie 數量: ${cookies.length}`,
       `Cookie 名稱: ${this.listCookieNames(cookies)}`,
+      `勇者小屋: ${heroProfile.name || "(unknown)"} / ${heroProfile.account || "(unknown)"}`,
       `通知 API: HTTP ${notificationResult.status} | content-type=${notificationResult.contentType || "unknown"}`,
       `通知 API 回傳摘要: ${this.describePayloadText(notificationResult.payload)}`,
       `通知解析結果: ${notifications.length} 筆`,
@@ -146,6 +154,71 @@ class BahamutProvider {
     }
 
     return messages;
+  }
+
+  async fetchHeroProfile(cookies) {
+    if (typeof this.profileFetcher === "function") {
+      const profile = await this.profileFetcher();
+      return this.normalizeHeroProfile(profile, cookies);
+    }
+
+    return this.buildFallbackHeroProfile(cookies);
+  }
+
+  normalizeHeroProfile(profile, cookies) {
+    const fallback = this.buildFallbackHeroProfile(cookies);
+
+    return {
+      name: this.firstNonEmpty([profile?.name, fallback.name]) ?? "勇者",
+      account: this.firstNonEmpty([profile?.account, fallback.account]) ?? "",
+      level: this.firstNonEmpty([profile?.level, fallback.level]) ?? "",
+      homeUrl: this.firstNonEmpty([profile?.homeUrl, fallback.homeUrl]) ?? SITE_HOME,
+      avatarUrl: this.firstNonEmpty([profile?.avatarUrl, fallback.avatarUrl]) ?? "",
+      gp: this.firstNonEmpty([profile?.gp, fallback.gp]) ?? "-",
+      coin: this.firstNonEmpty([profile?.coin, fallback.coin]) ?? "-",
+      donate: this.firstNonEmpty([profile?.donate, fallback.donate]) ?? "-"
+    };
+  }
+
+  buildFallbackHeroProfile(cookies) {
+    const cookieMap = new Map(cookies.map((cookie) => [cookie.name, cookie.value]));
+    const account = cookieMap.get("BAHAID") || cookieMap.get("MB_BAHAID") || "";
+    const nickname =
+      this.safeDecodeURIComponent(cookieMap.get("BAHANICK")) ||
+      this.safeDecodeURIComponent(cookieMap.get("MB_BAHANICK")) ||
+      "勇者";
+    const level = cookieMap.get("BAHALV") || "";
+
+    return {
+      name: nickname,
+      account,
+      level,
+      homeUrl: account ? `https://home.gamer.com.tw/${account}` : SITE_HOME,
+      avatarUrl: account ? this.buildAvatarUrl(account) : DEFAULT_AVATAR_URL,
+      gp: "-",
+      coin: "-",
+      donate: "-"
+    };
+  }
+
+  buildAvatarUrl(account) {
+    if (!account || account.length < 2) {
+      return DEFAULT_AVATAR_URL;
+    }
+
+    return `https://avatar2.bahamut.com.tw/avataruserpic/${account[0]}/${account[1]}/${account}/${account}_s.png`;
+  }
+
+  safeDecodeURIComponent(value) {
+    if (!value) {
+      return "";
+    }
+
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
   }
 
   hasLoginCookie(cookies) {
@@ -205,46 +278,47 @@ class BahamutProvider {
       return null;
     }
 
-    const title =
-      this.firstNonEmpty([
-        item.title,
-        item.subject,
-        item.name,
-        item.text,
-        item.msg,
-        item.message
-      ]) ?? `${kind === "notification" ? "通知" : "訂閱"} ${index + 1}`;
+    const rawMessage =
+      this.firstNonEmpty([item.message, item.title, item.subject, item.name, item.text, item.msg]) ??
+      `${kind === "notification" ? "通知" : "訂閱"} ${index + 1}`;
+    const message = this.sanitizeMessage(rawMessage);
 
-    const description =
-      this.firstNonEmpty([
-        item.description,
-        item.content,
-        item.summary,
-        item.subtitle,
-        item.body
-      ]) ?? "";
+    const date =
+      this.firstNonEmpty([item.date, item.time, item.createdAt, item.create_time, item.publish_time]) ??
+      "";
 
     const url = this.resolveUrl(
       this.firstNonEmpty([item.url, item.link, item.href, item.target])
     );
 
-    const createdAt = this.firstNonEmpty([
-      item.createdAt,
-      item.create_time,
-      item.time,
-      item.date,
-      item.publish_time
-    ]);
-
     return {
       id: String(
         this.firstNonEmpty([item.id, item.sn, item.cid, item.key, `${kind}-${index}`])
       ),
-      title,
-      description,
+      title: message,
+      description: "",
       url: url ?? SITE_HOME,
-      createdAt: createdAt ?? new Date().toISOString()
+      createdAt: date || new Date().toISOString()
     };
+  }
+
+  sanitizeMessage(value) {
+    if (value === undefined || value === null) {
+      return "";
+    }
+
+    return String(value)
+      .replace(/<br\s*\/?>/gi, " ")
+      .replace(/<\/p>/gi, " ")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   resolveUrl(value) {

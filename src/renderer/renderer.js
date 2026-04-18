@@ -52,8 +52,7 @@ function renderItems(container, items, expanded, emptyText) {
     .map((item) => {
       return `
         <li class="item">
-          <div class="itemTitle">${escapeHtml(item.title)}</div>
-          <div class="itemDescription clamp">${escapeHtml(item.description ?? "")}</div>
+          <div class="itemTitle clamp">${escapeHtml(item.title)}</div>
           <div class="itemMeta">${escapeHtml(formatTime(item.createdAt))}</div>
           <button class="itemLink" data-url="${escapeHtml(item.url)}" type="button">前往查看</button>
         </li>
@@ -69,6 +68,33 @@ function renderNotes(container, notes, emptyText = "目前沒有資料") {
   }
 
   container.innerHTML = notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
+}
+
+function renderHeroProfile(profile = {}) {
+  const avatar = document.getElementById("heroAvatar");
+  const avatarUrl = profile.avatarUrl || "";
+
+  if (avatarUrl) {
+    avatar.src = avatarUrl;
+    avatar.hidden = false;
+  } else {
+    avatar.hidden = true;
+    avatar.removeAttribute("src");
+  }
+
+  document.getElementById("heroLevel").textContent = profile.level
+    ? `LV.${profile.level}`
+    : "LV.-";
+  document.getElementById("heroName").textContent = profile.name || "尚未登入";
+  document.getElementById("heroAccount").textContent =
+    profile.account || "請先登入巴哈姆特";
+  document.getElementById("heroGp").textContent = profile.gp || "-";
+  document.getElementById("heroCoin").textContent = profile.coin || "-";
+  document.getElementById("heroDonate").textContent = profile.donate || "-";
+
+  const profileButton = document.getElementById("heroProfileButton");
+  profileButton.dataset.url = profile.homeUrl || "";
+  profileButton.disabled = !profile.homeUrl;
 }
 
 function renderActiveFeed() {
@@ -114,6 +140,7 @@ function applySnapshot(snapshot) {
     snapshot.fetchedAt
   )}`;
 
+  renderHeroProfile(snapshot.heroProfile);
   renderActiveFeed();
   renderNotes(
     document.getElementById("developerMessages"),
@@ -121,8 +148,8 @@ function applySnapshot(snapshot) {
     "目前沒有開發者訊息"
   );
 
-  const loginButton = document.getElementById("loginButton");
-  loginButton.textContent = snapshot.authState === "logged-in" ? "重新登入" : "登入";
+  document.getElementById("loginButton").textContent =
+    snapshot.authState === "logged-in" ? "重新登入" : "登入";
 }
 
 function updateDeveloperPanelVisibility() {

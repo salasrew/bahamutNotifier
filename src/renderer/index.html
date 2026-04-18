@@ -9,15 +9,46 @@
   <body>
     <main class="shell">
       <header class="hero">
-        <div>
-          <p class="eyebrow">Bahamut Desktop</p>
-          <h1>通知顯示器</h1>
-          <p class="heroSubtitle">右下角常駐，登入後同步通知與訂閱</p>
-        </div>
-        <div class="heroActions">
+        <div class="windowBar">
+          <p class="eyebrow">Bahamut Notifier</p>
           <button id="hideButton" class="iconButton" type="button" aria-label="隱藏">×</button>
-          <button id="loginButton" class="ghostButton" type="button">登入</button>
-          <button id="refreshButton" class="refreshButton" type="button">重新整理</button>
+        </div>
+
+        <div class="heroTop">
+          <div class="heroBrand">
+            <h1>勇者資訊</h1>
+            <p class="heroCaption">帳號資訊與站內動態</p>
+          </div>
+          <div class="heroActions">
+            <button id="loginButton" class="ghostButton" type="button">登入</button>
+            <button id="refreshButton" class="refreshButton" type="button">重新整理</button>
+          </div>
+        </div>
+
+        <button id="heroProfileButton" class="heroProfileCard" type="button">
+          <div class="heroAvatarWrap">
+            <img id="heroAvatar" class="heroAvatar" alt="avatar" />
+            <span id="heroLevel" class="heroLevel">LV.-</span>
+          </div>
+          <div class="heroIdentity">
+            <div id="heroName" class="heroName">尚未登入</div>
+            <div id="heroAccount" class="heroAccount">請先登入巴哈姆特</div>
+          </div>
+        </button>
+
+        <div class="heroStats">
+          <div class="heroMetric">
+            <span id="heroGp" class="heroMetricValue">-</span>
+            <span class="heroMetricLabel">GP</span>
+          </div>
+          <div class="heroMetric">
+            <span id="heroCoin" class="heroMetricValue">-</span>
+            <span class="heroMetricLabel">巴幣</span>
+          </div>
+          <div class="heroMetric">
+            <span id="heroDonate" class="heroMetricValue">-</span>
+            <span class="heroMetricLabel">贊助</span>
+          </div>
         </div>
       </header>
 

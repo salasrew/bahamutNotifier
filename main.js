@@ -29,7 +29,7 @@ function getWindowBounds() {
   const display = screen.getPrimaryDisplay();
   const workArea = display.workArea;
   const width = 380;
-  const height = 620;
+  const height = 680;
   const margin = 16;
 
   return {
@@ -129,9 +129,7 @@ async function browserContextFetch(type) {
       const response = await fetch(url, {
         method: "GET",
         credentials: "include",
-        headers: {
-          Accept: "*/*"
-        }
+        headers: { Accept: "*/*" }
       });
 
       const text = await response.text();
@@ -148,6 +146,74 @@ async function browserContextFetch(type) {
         url: response.url,
         contentType: response.headers.get("content-type") || "",
         payload
+      };
+    })();
+  `;
+
+  return windowRef.webContents.executeJavaScript(script, true);
+}
+
+async function browserContextFetchHeroProfile() {
+  const windowRef = await ensureFetchContext();
+  const script = `
+    (() => {
+      const decodeCookie = (name) => {
+        const value = document.cookie
+          .split("; ")
+          .find((item) => item.startsWith(name + "="));
+        if (!value) return "";
+        const raw = value.slice(name.length + 1);
+        try {
+          return decodeURIComponent(raw);
+        } catch {
+          return raw;
+        }
+      };
+
+      const text = (selector) => {
+        const node = document.querySelector(selector);
+        return node ? node.textContent.trim() : "";
+      };
+
+      const attr = (selector, name) => {
+        const node = document.querySelector(selector);
+        return node ? node.getAttribute(name) || "" : "";
+      };
+
+      const metricText = (id) => {
+        const node = document.getElementById(id);
+        return node ? node.textContent.trim() : "";
+      };
+
+      const account = decodeCookie("BAHAID") || decodeCookie("MB_BAHAID");
+      const nickname = decodeCookie("BAHANICK") || decodeCookie("MB_BAHANICK");
+      const levelFromCookie = decodeCookie("BAHALV");
+
+      return {
+        homeUrl:
+          attr(".member-popover__info", "href") ||
+          (account ? "https://home.gamer.com.tw/" + account : ""),
+        avatarUrl:
+          attr(".member-popover__profile-content img", "src") ||
+          (account
+            ? "https://avatar2.bahamut.com.tw/avataruserpic/" +
+              account.slice(0, 1) +
+              "/" +
+              account.slice(1, 2) +
+              "/" +
+              account +
+              "/" +
+              account +
+              "_s.png"
+            : ""),
+        name: text(".member-popover__name") || nickname,
+        account: text(".member-popover__account") || account,
+        level:
+          text(".member-popover__level").replace(/^LV\\./i, "").trim() ||
+          levelFromCookie,
+        gp: metricText("userGP"),
+        coin: metricText("userCoin"),
+        donate: metricText("userDonate")
       };
     })();
   `;
@@ -209,9 +275,7 @@ function updateTrayMenu() {
         });
       }
     },
-    {
-      type: "separator"
-    },
+    { type: "separator" },
     {
       label: "結束",
       click: () => {
@@ -383,12 +447,8 @@ async function restoreGamerCookies() {
 }
 
 function watchCookieChanges() {
-  session.defaultSession.cookies.on("changed", (_event, cookie, cause, removed) => {
+  session.defaultSession.cookies.on("changed", (_event, cookie) => {
     if (!cookie.domain || !cookie.domain.includes("gamer.com.tw")) {
-      return;
-    }
-
-    if (removed && cause === "expired-overwrite") {
       return;
     }
 
@@ -406,7 +466,8 @@ app.whenReady().then(async () => {
   provider = new BahamutProvider({
     pollIntervalMs: 60_000,
     electronSession: session.defaultSession,
-    browserFetcher: browserContextFetch
+    browserFetcher: browserContextFetch,
+    profileFetcher: browserContextFetchHeroProfile
   });
 
   createWindow();
