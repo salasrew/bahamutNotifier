@@ -1,71 +1,91 @@
 # Bahamut Notifier
 
-一個以 Electron 製作的 Windows 常駐小工具，用來顯示巴哈姆特的通知與訂閱更新。
+Electron-based Windows desktop utility for viewing Bahamut notifications and subscriptions in a compact always-on-top panel.
 
-## 已完成功能
+## Completed Features
 
-- Windows 桌面常駐小工具介面
-- 固定顯示在右下角
-- 系統匣常駐，關閉主視窗時不會直接結束程式
-- 右上角 `×` 按鈕可手動隱藏 App
-- 內建巴哈姆特登入視窗
-- 啟動後沿用登入 session 抓取通知與訂閱
-- 自動輪詢更新通知與訂閱資料
-- 通知與訂閱切換顯示
-- 預設只顯示前 5 筆，可按「更多」展開
-- 長訊息自動截斷，避免撐破畫面
-- `F12` 可切換開發者訊息面板
-- 本機保存登入 cookie，降低每次重開都要重新登入的情況
+- Windows desktop floating panel fixed to the bottom-right corner
+- System tray resident behavior
+- Manual hide button in the top-right corner
+- Built-in Bahamut login window
+- Session-based notification and subscription fetching
+- Auto refresh every 60 seconds
+- Notification and subscription tab switching
+- Show first 5 items by default, with expand/collapse support
+- Clean notification text rendering with HTML tag cleanup
+- Hero info panel with avatar, name, account, level, GP, coins, and donation
+- Local default avatar image for logged-out state
+- Logout flow that clears Bahamut cookies and persisted session data
+- Hidden developer panel toggled with `F12`
+- Hidden scrollbar with scrollable content
+- Drag-to-scroll behavior for a more touch-like panel experience
+- Unified tray icon and packaged app icon
+- Windows packaging via `electron-builder`
 
-## 資料來源
+## Data Sources
 
-目前通知與訂閱資料來自巴哈姆特導覽列使用的 API：
+Notification data currently uses the same Bahamut navigation API endpoints used by the site UI:
 
-- `type=0`：通知
-- `type=1`：訂閱
+- `type=0` for notifications
+- `type=1` for subscriptions
 
-程式不是用主程序硬拼 Cookie header，而是改成在已登入的巴哈頁面上下文中，以 `credentials: "include"` 發送請求，這樣能更接近瀏覽器實際行為。
+Requests are executed from an authenticated Bahamut browser context with `credentials: "include"` instead of manually stitching together cookie headers.
 
-## 執行方式
+## Run Locally
 
 ```powershell
-cd C:\Users\Salasrew\Desktop\bahamut
+cd <path-to-extracted-project>
 npm.cmd install
 npm.cmd start
 ```
 
-如果已經安裝過依賴，之後只需要：
+After dependencies are installed once:
 
 ```powershell
 npm.cmd start
 ```
 
-## 使用方式
+## Build Windows Installer
 
-1. 啟動 App。
-2. 第一次使用時，按右上角「登入」登入巴哈姆特。
-3. 登入成功後，程式會自動抓取通知與訂閱。
-4. 點上方的「通知」或「訂閱」卡片可切換列表。
-5. 資料超過 5 筆時，可按「更多」查看全部。
-6. 按右上角 `×` 可隱藏 App；要再次打開可從系統匣操作。
+```powershell
+cd <path-to-extracted-project>
+npm.cmd run dist
+```
 
-## 開發者模式
+Build output will be generated in:
 
-- 開發者訊息預設隱藏
-- 在 App 視窗中按 `F12` 可切換顯示
-- 主要用來查看登入狀態、Cookie 名稱、API 回傳摘要與解析結果
+- `dist/`
 
-## 專案結構
+## Usage
 
-- [main.js](C:\Users\Salasrew\Desktop\bahamut\main.js)：Electron 主程序、系統匣、登入視窗、cookie 保存
-- [preload.js](C:\Users\Salasrew\Desktop\bahamut\preload.js)：Renderer 與主程序橋接
-- [src/services/bahamut-provider.js](C:\Users\Salasrew\Desktop\bahamut\src\services\bahamut-provider.js)：通知與訂閱資料整理
-- [src/renderer/index.html](C:\Users\Salasrew\Desktop\bahamut\src\renderer\index.html)：畫面結構
-- [src/renderer/renderer.js](C:\Users\Salasrew\Desktop\bahamut\src\renderer\renderer.js)：前端互動邏輯
-- [src/renderer/styles.css](C:\Users\Salasrew\Desktop\bahamut\src\renderer\styles.css)：介面樣式
+1. Start the app.
+2. Click `登入` to sign in to Bahamut.
+3. After login, the app will fetch notifications and subscriptions automatically.
+4. Click the `通知` or `訂閱` cards to switch the active feed.
+5. Click `更多` to expand longer lists, and `收合` to collapse them.
+6. Click the hero profile card to open the Bahamut home page for that account.
+7. Click `登出` to clear the current Bahamut session.
+8. Click `×` to hide the app back to the system tray.
 
-## 注意事項
+## Developer Mode
 
-- 本專案依賴巴哈姆特目前前端使用的通知 API 與登入 session 行為。
-- 若巴哈姆特未來調整 API 或登入機制，可能需要更新程式。
-- 本機會保存登入相關 cookie 以便下次啟動還原登入狀態，請勿將執行時產生的 cookie 檔案上傳到公開 repo。
+- Developer messages are hidden by default
+- Press `F12` in the app window to toggle them
+- The panel shows auth state, cookie names, API response summaries, and parse results
+
+## Project Structure
+
+- `main.js`: Electron main process, tray behavior, login/logout flow, cookie persistence
+- `preload.js`: renderer bridge
+- `src/services/bahamut-provider.js`: data normalization, fallback profile handling, notification cleanup
+- `src/renderer/index.html`: UI structure
+- `src/renderer/renderer.js`: interaction logic and scrolling behavior
+- `src/renderer/styles.css`: visual styling and hidden-scroll layout
+- `src/images/`: app icons and fallback avatar assets
+
+## Notes
+
+- The app depends on Bahamut's current login/session behavior and notification endpoints.
+- If Bahamut changes the API or page structure, the integration may need updates.
+- Session cookies are persisted locally to reduce repeated logins.
+- Do not commit runtime-generated cookie files or private session data to a public repository.
