@@ -1,0 +1,262 @@
+:root {
+  color-scheme: dark;
+  --bg: #10151d;
+  --panel: #192332;
+  --panel-strong: #213149;
+  --text: #eaf2ff;
+  --muted: #97a9c1;
+  --accent: #45c0a5;
+  --accent-strong: #2a8f82;
+  --border: rgba(255, 255, 255, 0.08);
+  --ghost: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(69, 192, 165, 0.25), transparent 38%),
+    linear-gradient(180deg, #10151d 0%, #0d1219 100%);
+  color: var(--text);
+}
+
+.shell {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.hero,
+.statusCard,
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(25, 35, 50, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+
+.heroSubtitle {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+h2 {
+  font-size: 16px;
+}
+
+.refreshButton,
+.ghostButton,
+.itemLink,
+.metricButton,
+.textButton,
+.iconButton {
+  border: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refreshButton,
+.ghostButton,
+.itemLink,
+.iconButton {
+  border-radius: 999px;
+  padding: 10px 14px;
+}
+
+.iconButton {
+  min-width: 40px;
+  padding: 10px 12px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.refreshButton {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #08120f;
+}
+
+.ghostButton {
+  background: var(--ghost);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.statusCard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 14px;
+  gap: 10px;
+}
+
+.metric {
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.metricButton {
+  text-align: left;
+  color: var(--text);
+  border: 1px solid transparent;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.metricButton.is-active {
+  border-color: rgba(69, 192, 165, 0.5);
+  transform: translateY(-1px);
+}
+
+.metricLabel,
+.muted,
+.itemMeta {
+  color: var(--muted);
+}
+
+.metric strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.panel {
+  padding: 14px;
+}
+
+.is-hidden {
+  display: none;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(69, 192, 165, 0.15);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.textButton {
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+}
+
+.textButton[hidden] {
+  display: none;
+}
+
+.list,
+.notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.item {
+  padding: 12px;
+  border-radius: 14px;
+  background: #111b28;
+  overflow: hidden;
+}
+
+.itemTitle {
+  font-weight: 700;
+  margin-bottom: 6px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.itemDescription {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.itemMeta {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.itemLink {
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(69, 192, 165, 0.28);
+}
+
+.empty {
+  color: var(--muted);
+  padding: 8px 0;
+}
+
+.notes li {
+  color: var(--muted);
+  line-height: 1.5;
+  word-break: break-word;
+}

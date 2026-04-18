@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bahamut Notifier</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Bahamut Desktop</p>
+          <h1>通知顯示器</h1>
+          <p class="heroSubtitle">右下角常駐，登入後同步通知與訂閱</p>
+        </div>
+        <div class="heroActions">
+          <button id="hideButton" class="iconButton" type="button" aria-label="隱藏">×</button>
+          <button id="loginButton" class="ghostButton" type="button">登入</button>
+          <button id="refreshButton" class="refreshButton" type="button">重新整理</button>
+        </div>
+      </header>
+
+      <section class="statusCard">
+        <button id="notificationTab" class="metric metricButton is-active" type="button">
+          <span class="metricLabel">通知</span>
+          <strong id="notificationCount">0</strong>
+        </button>
+        <button id="subscriptionTab" class="metric metricButton" type="button">
+          <span class="metricLabel">訂閱</span>
+          <strong id="subscriptionCount">0</strong>
+        </button>
+      </section>
+
+      <section class="panel">
+        <div class="panelHeader">
+          <h2>狀態</h2>
+          <span id="authState" class="pill">讀取中</span>
+        </div>
+        <p id="fetchedAt" class="muted">尚未同步</p>
+      </section>
+
+      <section class="panel">
+        <div class="panelHeader">
+          <h2 id="feedTitle">通知</h2>
+          <button id="toggleMoreButton" class="textButton" type="button">更多</button>
+        </div>
+        <ul id="activeFeed" class="list"></ul>
+      </section>
+
+      <section id="developerPanel" class="panel is-hidden">
+        <div class="panelHeader">
+          <h2>開發者訊息</h2>
+        </div>
+        <ul id="developerMessages" class="notes developerNotes"></ul>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
