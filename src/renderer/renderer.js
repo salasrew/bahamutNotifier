@@ -1,4 +1,5 @@
 const FEED_PREVIEW_LIMIT = 5;
+const DEFAULT_AVATAR_SRC = new URL("../images/none.gif", window.location.href).href;
 
 const state = {
   activeFeed: "notifications",
@@ -72,15 +73,20 @@ function renderNotes(container, notes, emptyText = "目前沒有資料") {
 
 function renderHeroProfile(profile = {}) {
   const avatar = document.getElementById("heroAvatar");
-  const avatarUrl = profile.avatarUrl || "";
+  const hasRealAvatar =
+    typeof profile.avatarUrl === "string" &&
+    profile.avatarUrl.trim() !== "" &&
+    !profile.avatarUrl.endsWith("none.gif");
+  const avatarUrl = hasRealAvatar ? profile.avatarUrl : DEFAULT_AVATAR_SRC;
 
-  if (avatarUrl) {
-    avatar.src = avatarUrl;
-    avatar.hidden = false;
-  } else {
-    avatar.hidden = true;
-    avatar.removeAttribute("src");
-  }
+  avatar.hidden = false;
+  avatar.onerror = hasRealAvatar
+    ? () => {
+        avatar.onerror = null;
+        avatar.src = DEFAULT_AVATAR_SRC;
+      }
+    : null;
+  avatar.src = avatarUrl;
 
   document.getElementById("heroLevel").textContent = profile.level
     ? `LV.${profile.level}`
@@ -149,7 +155,7 @@ function applySnapshot(snapshot) {
   );
 
   document.getElementById("loginButton").textContent =
-    snapshot.authState === "logged-in" ? "重新登入" : "登入";
+    snapshot.authState === "logged-in" ? "登出" : "登入";
 }
 
 function updateDeveloperPanelVisibility() {
@@ -164,6 +170,11 @@ document.getElementById("refreshButton").addEventListener("click", async () => {
 });
 
 document.getElementById("loginButton").addEventListener("click", async () => {
+  if (state.snapshot?.authState === "logged-in") {
+    await window.bahamutApp.logout();
+    return;
+  }
+
   await window.bahamutApp.login();
 });
 

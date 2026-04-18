@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld("bahamutApp", {
   login() {
     return ipcRenderer.invoke("bahamut:login");
   },
+  logout() {
+    return ipcRenderer.invoke("bahamut:logout");
+  },
   hideWindow() {
     return ipcRenderer.invoke("bahamut:hide-window");
   },

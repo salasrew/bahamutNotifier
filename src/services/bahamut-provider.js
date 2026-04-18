@@ -136,7 +136,7 @@ class BahamutProvider {
       `登入結果: ${authState}`,
       `偵測到 gamer.com.tw Cookie 數量: ${cookies.length}`,
       `Cookie 名稱: ${this.listCookieNames(cookies)}`,
-      `勇者小屋: ${heroProfile.name || "(unknown)"} / ${heroProfile.account || "(unknown)"}`,
+      `勇者資訊: ${heroProfile.name || "(unknown)"} / ${heroProfile.account || "(unknown)"}`,
       `通知 API: HTTP ${notificationResult.status} | content-type=${notificationResult.contentType || "unknown"}`,
       `通知 API 回傳摘要: ${this.describePayloadText(notificationResult.payload)}`,
       `通知解析結果: ${notifications.length} 筆`,
@@ -167,13 +167,15 @@ class BahamutProvider {
 
   normalizeHeroProfile(profile, cookies) {
     const fallback = this.buildFallbackHeroProfile(cookies);
+    const resolvedAvatar =
+      this.firstNonEmpty([profile?.avatarUrl, fallback.avatarUrl]) ?? DEFAULT_AVATAR_URL;
 
     return {
       name: this.firstNonEmpty([profile?.name, fallback.name]) ?? "勇者",
       account: this.firstNonEmpty([profile?.account, fallback.account]) ?? "",
       level: this.firstNonEmpty([profile?.level, fallback.level]) ?? "",
       homeUrl: this.firstNonEmpty([profile?.homeUrl, fallback.homeUrl]) ?? SITE_HOME,
-      avatarUrl: this.firstNonEmpty([profile?.avatarUrl, fallback.avatarUrl]) ?? "",
+      avatarUrl: resolvedAvatar,
       gp: this.firstNonEmpty([profile?.gp, fallback.gp]) ?? "-",
       coin: this.firstNonEmpty([profile?.coin, fallback.coin]) ?? "-",
       donate: this.firstNonEmpty([profile?.donate, fallback.donate]) ?? "-"
@@ -281,8 +283,8 @@ class BahamutProvider {
     const rawMessage =
       this.firstNonEmpty([item.message, item.title, item.subject, item.name, item.text, item.msg]) ??
       `${kind === "notification" ? "通知" : "訂閱"} ${index + 1}`;
-    const message = this.sanitizeMessage(rawMessage);
 
+    const message = this.sanitizeMessage(rawMessage);
     const date =
       this.firstNonEmpty([item.date, item.time, item.createdAt, item.create_time, item.publish_time]) ??
       "";

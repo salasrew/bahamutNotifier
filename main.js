@@ -15,6 +15,7 @@ const { BahamutProvider } = require("./src/services/bahamut-provider");
 
 const BAHAMUT_HOME_URL = "https://www.gamer.com.tw/";
 const BAHAMUT_LOGIN_URL = "https://user.gamer.com.tw/login.php";
+const APP_ICON_PATH = path.join(__dirname, "src", "images", "app-icon.ico");
 
 let mainWindow;
 let loginWindow;
@@ -41,17 +42,7 @@ function getWindowBounds() {
 }
 
 function createTrayIcon() {
-  const svg = `
-    <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <rect x="8" y="8" width="48" height="48" rx="14" fill="#1d2a3f"/>
-      <path d="M32 18C24.82 18 19 23.82 19 31V38L16 42V44H48V42L45 38V31C45 23.82 39.18 18 32 18Z" fill="#45C0A5"/>
-      <circle cx="32" cy="49" r="5" fill="#EAF2FF"/>
-    </svg>
-  `;
-
-  return nativeImage.createFromDataURL(
-    `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
-  );
+  return nativeImage.createFromPath(APP_ICON_PATH);
 }
 
 function createWindow() {
@@ -59,6 +50,7 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     ...bounds,
+    icon: APP_ICON_PATH,
     frame: false,
     transparent: false,
     resizable: false,
@@ -336,6 +328,7 @@ function openLoginWindow() {
   loginWindow = new BrowserWindow({
     width: 1100,
     height: 820,
+    icon: APP_ICON_PATH,
     title: "登入巴哈姆特",
     autoHideMenuBar: true,
     webPreferences: {
@@ -446,6 +439,41 @@ async function restoreGamerCookies() {
   }
 }
 
+async function clearPersistedGamerCookies() {
+  try {
+    await fs.unlink(cookieStorePath);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.warn("Failed to remove persisted Bahamut cookies:", error.message);
+    }
+  }
+}
+
+async function clearGamerCookies() {
+  const cookies = await session.defaultSession.cookies.get({});
+  const gamerCookies = cookies.filter((cookie) => {
+    return (
+      cookie.domain === ".gamer.com.tw" ||
+      cookie.domain === "gamer.com.tw" ||
+      cookie.domain.endsWith(".gamer.com.tw")
+    );
+  });
+
+  for (const cookie of gamerCookies) {
+    const protocol = cookie.secure ? "https://" : "http://";
+    const domain = cookie.domain.startsWith(".") ? cookie.domain.slice(1) : cookie.domain;
+    const url = `${protocol}${domain}${cookie.path || "/"}`;
+
+    try {
+      await session.defaultSession.cookies.remove(url, cookie.name);
+    } catch (error) {
+      console.warn(`Failed to remove cookie ${cookie.name}:`, error.message);
+    }
+  }
+
+  await clearPersistedGamerCookies();
+}
+
 function watchCookieChanges() {
   session.defaultSession.cookies.on("changed", (_event, cookie) => {
     if (!cookie.domain || !cookie.domain.includes("gamer.com.tw")) {
@@ -508,6 +536,25 @@ ipcMain.handle("bahamut:refresh", async () => {
 
 ipcMain.handle("bahamut:login", async () => {
   openLoginWindow();
+  return { ok: true };
+});
+
+ipcMain.handle("bahamut:logout", async () => {
+  if (loginWindow && !loginWindow.isDestroyed()) {
+    loginWindow.close();
+  }
+
+  await clearGamerCookies();
+
+  if (fetchWindow && !fetchWindow.isDestroyed()) {
+    await fetchWindow.loadURL(BAHAMUT_HOME_URL);
+  }
+
+  const snapshot = await provider.getSnapshot(true);
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("bahamut:snapshot", snapshot);
+  }
+
   return { ok: true };
 });
 
