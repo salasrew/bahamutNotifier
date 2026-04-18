@@ -4,6 +4,11 @@ const DEFAULT_AVATAR_SRC = new URL("../images/none.gif", window.location.href).h
 const state = {
   activeFeed: "notifications",
   developerMode: false,
+  dragScroll: {
+    active: false,
+    startY: 0,
+    startScrollTop: 0
+  },
   expanded: {
     notifications: false,
     subscriptions: false
@@ -164,6 +169,43 @@ function updateDeveloperPanelVisibility() {
     .classList.toggle("is-hidden", !state.developerMode);
 }
 
+function setupDragScroll() {
+  const shell = document.querySelector(".shell");
+  if (!shell) {
+    return;
+  }
+
+  shell.addEventListener("pointerdown", (event) => {
+    const interactiveTarget = event.target.closest("button, a, input, textarea, select");
+    if (interactiveTarget) {
+      return;
+    }
+
+    state.dragScroll.active = true;
+    state.dragScroll.startY = event.clientY;
+    state.dragScroll.startScrollTop = shell.scrollTop;
+    shell.classList.add("is-dragging");
+  });
+
+  shell.addEventListener("pointermove", (event) => {
+    if (!state.dragScroll.active) {
+      return;
+    }
+
+    const deltaY = event.clientY - state.dragScroll.startY;
+    shell.scrollTop = state.dragScroll.startScrollTop - deltaY;
+  });
+
+  const stopDragging = () => {
+    state.dragScroll.active = false;
+    shell.classList.remove("is-dragging");
+  };
+
+  shell.addEventListener("pointerup", stopDragging);
+  shell.addEventListener("pointercancel", stopDragging);
+  shell.addEventListener("pointerleave", stopDragging);
+}
+
 document.getElementById("refreshButton").addEventListener("click", async () => {
   const snapshot = await window.bahamutApp.refresh();
   applySnapshot(snapshot);
@@ -226,3 +268,4 @@ window.bahamutApp.onSnapshot((snapshot) => {
 });
 
 updateDeveloperPanelVisibility();
+setupDragScroll();

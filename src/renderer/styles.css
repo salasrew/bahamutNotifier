@@ -27,12 +27,29 @@ body {
     radial-gradient(circle at top, rgba(69, 192, 165, 0.25), transparent 38%),
     linear-gradient(180deg, #10151d 0%, #0d1219 100%);
   color: var(--text);
+  overflow: hidden;
 }
 
 .shell {
+  height: 100vh;
   padding: 16px;
   display: grid;
   gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  cursor: default;
+}
+
+.shell::-webkit-scrollbar {
+  display: none;
+}
+
+.shell.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .hero,
